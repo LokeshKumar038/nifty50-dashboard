@@ -2,6 +2,12 @@
 
 A comprehensive Streamlit-based dashboard for viewing NIFTY50 daily performance metrics, including daily changes in points and percentage over the past 1 year.
 
+## 🚀 Live Dashboard
+
+**Access the deployed dashboard:** https://lokeshnifty50.streamlit.app
+
+The dashboard is live on Streamlit Community Cloud and updates automatically with the latest market data!
+
 ## Features
 
 - 📈 **Daily Price Trend**: Visualize NIFTY50 closing prices over time
