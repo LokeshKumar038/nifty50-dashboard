@@ -182,3 +182,12 @@ with col4:
     st.metric("Max Daily Swing", f"{max_daily_gain - max_daily_loss:,.0f} pts")
 
 st.info("✅ Dashboard auto-updates with latest NIFTY50 data. Last updated: " + datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+
+# Footer
+st.divider()
+st.markdown("""
+<div style='text-align: center; color: #888; font-size: 12px; margin-top: 40px; padding: 20px;'>
+    <p>Developed and Designed by <strong>Lokesh Kumar</strong> © 2026</p>
+    <p><a href='https://github.com/LokeshKumar038/nifty50-dashboard' style='color: #0066cc; text-decoration: none;'>View on GitHub</a></p>
+</div>
+""", unsafe_allow_html=True)
