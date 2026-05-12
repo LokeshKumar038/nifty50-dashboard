@@ -5,7 +5,8 @@ import plotly.graph_objects as go
 import plotly.express as px
 from data_fetcher import process_nifty_data, fetch_nifty50_data
 import pandas as pd
-from datetime import datetime, timedelta
+from datetime import datetime
+import pytz
 
 # Page configuration
 st.set_page_config(page_title="NIFTY50 Dashboard", layout="wide", initial_sidebar_state="expanded")
@@ -181,7 +182,10 @@ with col4:
     max_daily_loss = data['Daily_Change_Points'].min()
     st.metric("Max Daily Swing", f"{max_daily_gain - max_daily_loss:,.0f} pts")
 
-st.info("✅ Dashboard auto-updates with latest NIFTY50 data. Last updated: " + datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+# Get current time in IST
+ist = pytz.timezone('Asia/Kolkata')
+current_time_ist = datetime.now(ist).strftime("%Y-%m-%d %H:%M:%S IST")
+st.info("✅ Dashboard auto-updates with latest NIFTY50 data. Last updated: " + current_time_ist)
 
 # Footer
 st.divider()
