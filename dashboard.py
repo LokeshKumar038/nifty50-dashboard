@@ -16,14 +16,20 @@ st.markdown("Daily performance metrics and analysis for the past 1 year")
 
 # Sidebar for controls
 st.sidebar.header("Dashboard Controls")
+
+# Add refresh button
+if st.sidebar.button("🔄 Refresh Data"):
+    st.cache_data.clear()
+    st.rerun()
+
 time_period = st.sidebar.selectbox(
     "Select Time Period",
     ["1mo", "3mo", "6mo", "1y"],
     index=3
 )
 
-# Fetch data
-@st.cache_data
+# Fetch data (refresh cache every 1 hour = 3600 seconds)
+@st.cache_data(ttl=3600)
 def get_nifty_data(period):
     return process_nifty_data(period)
 
