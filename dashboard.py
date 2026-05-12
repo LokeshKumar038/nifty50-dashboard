@@ -4,6 +4,9 @@ import streamlit as st
 import plotly.graph_objects as go
 import plotly.express as px
 from data_fetcher import process_nifty_data, fetch_nifty50_data
+from pe_analyzer import get_pe_metrics
+from alerts import PriceAlertManager
+from predictor import get_all_predictions
 import pandas as pd
 from datetime import datetime
 import pytz
@@ -62,13 +65,24 @@ with col4:
     period_low = data['Close_Price'].min()
     st.metric("52-Week Range", f"₹{period_low:,.0f} - ₹{period_high:,.0f}")
 
+# Initialize and display alerts
+alert_manager = PriceAlertManager()
+alert_manager.display_alert_ui()
+
+# Check and display triggered alerts
+triggered_alerts = alert_manager.check_alerts(current_price, daily_change_percent)
+if triggered_alerts:
+    st.divider()
+    for alert in triggered_alerts:
+        st.info(alert)
+
 st.divider()
 
 # Charts
 st.subheader("📊 NIFTY50 Daily Price & Changes")
 
 # Create tabs for different views
-tab1, tab2, tab3 = st.tabs(["Price Trend", "Daily Change (Points)", "Daily Change (%)"])
+tab1, tab2, tab3, tab4, tab5 = st.tabs(["Price Trend", "Daily Change (Points)", "Daily Change (%)", "PE Ratio Analysis", "Predictions"])
 
 with tab1:
     fig_price = go.Figure()
@@ -137,6 +151,91 @@ with tab3:
         showlegend=False
     )
     st.plotly_chart(fig_percent, use_container_width=True)
+
+with tab4:
+    st.subheader("💹 PE Ratio Analysis")
+    pe_data, pe_metrics = get_pe_metrics(time_period)
+    
+    if pe_metrics:
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            st.metric("Current PE Ratio", f"{pe_metrics['current_pe']:.2f}")
+        with col2:
+            st.metric("Fair Value PE", f"{pe_metrics['fair_value']:.2f}")
+        with col3:
+            st.metric("Status", pe_metrics['valuation_status'])
+        with col4:
+            st.metric("Std Deviation", f"{pe_metrics['historical_std']:.2f}")
+        
+        # PE Ratio Chart with thresholds
+        fig_pe = go.Figure()
+        fig_pe.add_trace(go.Scatter(
+            x=pe_data['Date'], 
+            y=pe_data['PE_Ratio'], 
+            name='PE Ratio',
+            line=dict(color='#1f77b4', width=2)
+        ))
+        fig_pe.add_hline(y=pe_metrics['fair_value'], line_dash="dash", line_color="green", annotation_text="Fair Value")
+        fig_pe.add_hline(y=pe_metrics['overvalued_threshold'], line_dash="dash", line_color="red", annotation_text="Overvalued")
+        fig_pe.add_hline(y=pe_metrics['undervalued_threshold'], line_dash="dash", line_color="blue", annotation_text="Undervalued")
+        
+        fig_pe.update_layout(
+            title="NIFTY50 PE Ratio Trend",
+            xaxis_title="Date",
+            yaxis_title="PE Ratio",
+            height=400,
+            template='plotly_white',
+            hovermode='x unified'
+        )
+        st.plotly_chart(fig_pe, use_container_width=True)
+        
+        # Valuation explanation
+        st.info(f"""
+        **Valuation Guide:**
+        - 🟢 **Undervalued**: PE < {pe_metrics['undervalued_threshold']:.2f} (Good buying opportunity)
+        - 🟡 **Fair Value**: {pe_metrics['undervalued_threshold']:.2f} ≤ PE ≤ {pe_metrics['overvalued_threshold']:.2f} (Fairly priced)
+        - 🔴 **Overvalued**: PE > {pe_metrics['overvalued_threshold']:.2f} (Potentially expensive)
+        """)
+
+with tab5:
+    st.subheader("🔮 Predictions & Forecasting")
+    predictions = get_all_predictions(data)
+    
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        trend_data = predictions['trend']
+        st.metric("7-Day Trend", trend_data['trend'], f"{trend_data['confidence']:.1f}% confidence")
+    
+    with col2:
+        forecast = predictions['price_forecast']
+        st.metric("30-Day Price Target", f"₹{forecast['forecast_price_30d']:,.2f}", 
+                  f"{forecast['expected_change_percent']:+.2f}%")
+    
+    with col3:
+        vol = predictions['volatility']
+        st.metric("Volatility Status", vol['volatility_trend'], f"Risk: {vol['risk_level']}")
+    
+    st.divider()
+    
+    # Price forecast chart
+    forecast = predictions['price_forecast']
+    future_dates = pd.date_range(start=data['Date'].iloc[-1], periods=len(forecast['forecast_prices']) + 1)[1:]
+    
+    fig_forecast = go.Figure()
+    fig_forecast.add_trace(go.Scatter(x=data['Date'], y=data['Close_Price'], name='Historical Price', line=dict(color='blue')))
+    fig_forecast.add_trace(go.Scatter(x=future_dates, y=forecast['forecast_prices'], name='30-Day Forecast', 
+                                      line=dict(color='orange', dash='dash')))
+    
+    fig_forecast.update_layout(
+        title="NIFTY50 Price Forecast (30 Days)",
+        xaxis_title="Date",
+        yaxis_title="Price (₹)",
+        height=400,
+        template='plotly_white',
+        hovermode='x unified'
+    )
+    st.plotly_chart(fig_forecast, use_container_width=True)
 
 st.divider()
 
